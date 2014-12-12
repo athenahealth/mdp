@@ -3,6 +3,8 @@ mdp
 
 athenahealth's More Disruption Please API samples
 
+Visit https://developer.athenahealth.com/ for more information and to sign up for our developer sandbox!
+
 //	  Copyright 2014 athenahealth, Inc.
 //
 //	 Licensed under the Apache License, Version 2.0 (the "License"); you
