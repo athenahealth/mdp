@@ -1,0 +1,9 @@
+For those who use Mono:
+
+In order to use the HTTPS required by the API, you'll need to run the command below.  HTTPS requires
+SSL, which needs a populated certificate store.  Mono doesn't populate it by default, but it does
+provide a good way to get Mozilla's default set.  
+
+More reading here: http://www.mono-project.com/FAQ:_Security
+
+mozroots --import 

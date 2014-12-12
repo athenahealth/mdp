@@ -1,0 +1,7 @@
+You will need to install the following Perl modules in order to use athenahealthapi.pm.  JSON is
+used to decode API responses, LWP is used to perform HTTP requests, and URI is used to properly
+escape request parameters.
+
+JSON | http://search.cpan.org/~makamaka/JSON-2.90/lib/JSON.pm
+LWP  | http://search.cpan.org/~mschilli/libwww-perl-6.06/lib/LWP.pm
+URI  | http://search.cpan.org/~gaas/URI-1.60/URI/Escape.pm
