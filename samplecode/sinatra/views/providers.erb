@@ -1,0 +1,8 @@
+<div>
+  <h1>Providers!</h1>
+    <p>Only the first 5 shown</p>
+      <% @providers.each do |provider| %>
+          <p><%=provider.name%>, <%=provider.specialty%></p>
+      <% end %>
+</div>
+
