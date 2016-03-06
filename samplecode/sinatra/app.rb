@@ -15,9 +15,11 @@
 #   permissions and limitations under the License.
 
 require 'sinatra'
+require 'json'
 require './authenticator.rb'
 require './department.rb'
 require './provider.rb'
+require './apirequesthistory.rb'
 
 $practiceid = '195900'
 $authenticator = Authenticator.new
@@ -34,7 +36,36 @@ end
 
 get '/providers' do
   @providers = Provider.find limit: 5
+  @search_info = ApiRequestHistory.get_history_for_model 'providers'
   erb :providers
+end
+
+get '/templates/appointment' do
+  File.read('templates/appointment.mustache')
+end
+
+get '/appointment.json' do
+  content_type :json
+  # SAMPLE APPOINTMENT DATA FOR NOW
+  {
+    'model' => {
+      'appointment' => [
+        {
+          'date' => '4/7/2016',
+          'type' => 'New Patient'
+        },
+        {
+          'date' => '4/8/2016',
+          'type' => 'Existing Patient'
+        },
+        {
+          'date' => "4/9/"+(2000+rand(100)).to_s,
+          'type' => "Random Future Patient"
+        }
+      ]     
+    },
+    'error' => ''
+  }.to_json
 end
 
 after '*' do

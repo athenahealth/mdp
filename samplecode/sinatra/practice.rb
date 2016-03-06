@@ -14,26 +14,4 @@
 #   implied.  See the License for the specific language governing
 #   permissions and limitations under the License.
 
-require 'net/https'
-require 'uri'
-
-require './apirequest.rb'
-
-class Practice
-  attr_reader :id, :departments, :name
-
-  def initialize id
-    @id = id
-    @departments = []
-  end
-
-  def self.base_path
-    @base_path ||= "/#{$authenticator.version}/#{@id}"
-  end
-
-  def getDepartments
-    dept_request = ApiRequest.new Department, { 'limit' => 1 } 
-
-    @departments = dept_request.try_request
-  end
-end
+# NOTHING HERE AT THE MOMENT

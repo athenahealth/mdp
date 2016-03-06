@@ -1,8 +1,33 @@
 <div>
-  <h1>Providers!</h1>
-    <p>Only the first 5 shown</p>
+  <div class='row'>
+    <div class='col-xs-6'>
+      <h1>Providers</h1>
+      <p>Only the first 5 shown (<%= @search_info[:totalcount] %> total in practice)</p>
       <% @providers.each do |provider| %>
-          <p><%=provider.name%>, <%=provider.specialty%></p>
+      <div class='row provider-row'>
+        <div class='col-xs-4'>
+          <button class="btn btn-default appointment-by-provider" type="submit" 
+            data-providerid='<%=provider.providerid%>'>
+            Appointments
+          </button>
+        </div>
+        <div class='col-xs-8'>
+          <div class='provider-name'>
+            <%=provider.name%>
+          </div>
+          <div class='provider-info'>
+            <%=provider.providertypeid%>, <%=provider.specialty%>
+          </div>
+        </div>
+      </div>
       <% end %>
+    </div>
+    <div class='col-xs-6'>
+      <h1>Appointment Results</h1>
+      <p>Currently mock data on the local web-server.</p>
+        <div class='row appointment-results'>
+        </div>
+  </div>
 </div>
+
 

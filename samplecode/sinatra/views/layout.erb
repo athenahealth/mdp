@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
     <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
   </head>
   <body>
     <div class="container">
@@ -50,5 +51,14 @@
     <script src="/vendor/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="/vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/vendor/mustache.min.js"></script>
+    <script src="/vendor/require.min.js"></script>
+    <script src="/scripts/appointment.js"></script>
+    <script src="/scripts/app.js"></script>
+    <script>
+      require(['app'], function(App) {
+        App.initialize();
+      });
+    </script>
   </body>
 </html>

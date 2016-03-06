@@ -2,7 +2,7 @@ require './model.rb'
 require './apirequest.rb'
 
 class Provider < Model
-  attr_reader :firstname, :lastname, :specialty
+  attr_reader :firstname, :lastname, :specialty, :providertypeid, :providerid
 
   def self.name
     'providers'
@@ -16,13 +16,11 @@ class Provider < Model
     @firstname = args['firstname']
     @lastname = args['lastname']
     @specialty = args['specialty']
+    @providertypeid = args['providertypeid']
+    @providerid = args['providerid']
   end
 
   def name
     "#{@firstname} #{@lastname}"
-  end
-
-  def to_s
-    "id: #{@id}\nstate:#{@state}"
   end
 end

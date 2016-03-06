@@ -55,7 +55,6 @@ class Authenticator
 
     request = Net::HTTP::Post.new("/#{auth_paths[version]}/token")
    
-    puts "key: #{@key}, secret: #{@secret}"
     request.basic_auth @key, @secret
     request.set_form_data({'grant_type' => 'client_credentials'})
 

@@ -1,0 +1,12 @@
+.provider-row {
+  padding: 5px;
+}
+
+.provider-name {
+  font-size: 19px;
+}
+
+.provider-info {
+  font-size: 13px;
+  color: #757575;
+}

@@ -1,6 +1,7 @@
 require 'cgi'
 require 'json'
 require './apiconnection.rb'
+require './apirequesthistory.rb'
 
 class ApiRequest
   def initialize klass, params
@@ -40,7 +41,12 @@ class ApiRequest
 
     if response
       parsed_response = JSON.parse(response.body)
+
       model_json = parsed_response[@name]
+
+      ApiRequestHistory.set_history_for_model @name,
+        count: model_json.count,
+        totalcount: parsed_response['totalcount']
       
       model_json.each do |model_args|
         models << @modelclass.new(model_args)
