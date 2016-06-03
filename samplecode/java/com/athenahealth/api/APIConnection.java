@@ -22,8 +22,10 @@ import java.util.HashMap;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import org.apache.commons.codec.binary.Base64;
@@ -75,9 +77,10 @@ public class APIConnection {
 	 * @param version API version to access
 	 * @param key     client key (also known as ID)
 	 * @param secret  client secret
-	 * @throws Exception from authentication
+	 *
+	 * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
-	public APIConnection(String version, String key, String secret) throws Exception {
+	public APIConnection(String version, String key, String secret) throws AthenahealthException {
 		this(version, key, secret, "");
 	}
 
@@ -88,9 +91,10 @@ public class APIConnection {
 	 * @param key        client key (also known as ID)
 	 * @param secret     client secret
 	 * @param practiceid practice ID to use
-	 * @throws Exception from authentication
+     *
+     * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
-	public APIConnection(String version, String key, String secret, String practiceid) throws Exception {
+	public APIConnection(String version, String key, String secret, String practiceid) throws AthenahealthException {
 		this.version = version;
 		this.key = key;
 		this.secret = secret;
@@ -103,35 +107,45 @@ public class APIConnection {
 	/**
 	 * Perform the steps of basic authentication.
 	 */
-	private void authenticate() throws Exception {
-		// The URL to authenticate to is determined by the version of the API specified at
-		// construction.
-		URL url = new URL(path_join(base_url, auth_prefixes.get(version), "/token"));
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+	private void authenticate() throws AuthenticationException {
+	    try {
+	        // The URL to authenticate to is determined by the version of the API specified at
+	        // construction.
+	        URL url = new URL(path_join(base_url, auth_prefixes.get(version), "/token"));
+	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+	        conn.setRequestMethod("POST");
 
-		String auth = Base64.encodeBase64String((key + ":" + secret).getBytes());
-		conn.setRequestProperty("Authorization", "Basic " + auth);
+	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes());
+	        conn.setRequestProperty("Authorization", "Basic " + auth);
 
-		conn.setDoOutput(true);
-		Map<String, String> parameters = new HashMap<String, String>();
-		parameters.put("grant_type", "client_credentials");
+	        conn.setDoOutput(true);
+	        Map<String, String> parameters = new HashMap<String, String>();
+	        parameters.put("grant_type", "client_credentials");
 
-		DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-		wr.writeBytes(urlencode(parameters));
-		wr.flush();
-		wr.close();
+	        DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+	        wr.writeBytes(urlencode(parameters));
+	        wr.flush();
+	        wr.close();
 
-		BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-		StringBuilder sb = new StringBuilder();
-		String line;
-		while ((line = rd.readLine()) != null) {
-			sb.append(line);
-		}
-		rd.close();
+	        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+	        StringBuilder sb = new StringBuilder();
+	        String line;
+	        while ((line = rd.readLine()) != null) {
+	            sb.append(line);
+	        }
+	        rd.close();
 
-		JSONObject response = new JSONObject(sb.toString());
-		token = response.get("access_token").toString();
+	        JSONObject response = new JSONObject(sb.toString());
+	        token = response.get("access_token").toString();
+	    }
+        catch (MalformedURLException mue)
+        {
+            throw new AuthenticationException("Error authenticating with server", mue);
+        }
+	    catch (IOException ioe)
+	    {
+	        throw new AuthenticationException("Error authenticating with server", ioe);
+	    }
 	}
 
 	/**
@@ -140,7 +154,7 @@ public class APIConnection {
 	 * @param args parts of the path to join
 	 * @return the joined path
 	 */
-	private String path_join(String ... args) throws Exception {
+	private String path_join(String ... args) {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
@@ -170,22 +184,26 @@ public class APIConnection {
 	 * @param parameters keys and values to encode
 	 * @return the query string
 	 */
-	private String urlencode(Map<?, ?> parameters) throws Exception {
+	private String urlencode(Map<?, ?> parameters) {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
-		String encoding = "UTF-8";
-		for (Map.Entry<?,?> pair : parameters.entrySet()) {
-			String k = pair.getKey().toString();
-			String v = pair.getValue().toString();
-			String current = URLEncoder.encode(k, encoding) + "=" + URLEncoder.encode(v, encoding);
 
-			if (first) {
-				first = false;
-			}
-			else {
-				sb.append("&");
-			}
-			sb.append(current);
+		try {
+		    for (Map.Entry<?,?> pair : parameters.entrySet()) {
+		        String k = pair.getKey().toString();
+		        String v = pair.getValue().toString();
+		        String current = URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8");
+
+		        if (first) {
+		            first = false;
+		        }
+		        else {
+		            sb.append("&");
+		        }
+		        sb.append(current);
+		    }
+		} catch (UnsupportedEncodingException uee) {
+		    throw new InternalError("Java suddenly does not support UTF-8 character encoding");
 		}
 
 		return sb.toString();
@@ -206,61 +224,70 @@ public class APIConnection {
 	 * @return the JSON-decoded response
 	 * @throws Exception
 	 */
-	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws Exception {
-		// Join up a url and open a connection
-		URL url = new URL(path_join(base_url, version, practiceid, path));
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-	    conn.setRequestMethod(verb);
+	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
+	    try {
+	        // Join up a url and open a connection
+	        URL url = new URL(path_join(base_url, version, practiceid, path));
+	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+	        conn.setRequestMethod(verb);
 
-		// Set the Authorization header using the token, then do the rest of the headers
-		conn.setRequestProperty("Authorization", "Bearer " + token);
-		if (headers != null) {
-			for (Map.Entry<String, String> pair : headers.entrySet()) {
-				conn.setRequestProperty(pair.getKey(), pair.getValue());
-			}
-		}
+	        // Set the Authorization header using the token, then do the rest of the headers
+	        conn.setRequestProperty("Authorization", "Bearer " + token);
+	        if (headers != null) {
+	            for (Map.Entry<String, String> pair : headers.entrySet()) {
+	                conn.setRequestProperty(pair.getKey(), pair.getValue());
+	            }
+	        }
 
-		// Set the request parameters, if there are any
-		if (parameters != null) {
-			conn.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-			wr.writeBytes(urlencode(parameters));
-			wr.flush();
-			wr.close();
-		}
+	        // Set the request parameters, if there are any
+	        if (parameters != null) {
+	            conn.setDoOutput(true);
+	            DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+	            wr.writeBytes(urlencode(parameters));
+	            wr.flush();
+	            wr.close();
+	        }
 
-		// If we get a 401, retry once
-		if (conn.getResponseCode() == 401 && !secondcall) {
-			authenticate();
-			return call(verb, path, parameters, headers, true);
-		}
+	        // If we get a 401, retry once
+	        if (conn.getResponseCode() == 401 && !secondcall) {
+	            authenticate();
+	            return call(verb, path, parameters, headers, true);
+	        }
 
-		// The API response is in the input stream on success and the error stream on failure.
-		BufferedReader rd;
-		try {
-			rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-		}
-		catch (IOException e) {
-			rd = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-		}
-		StringBuilder sb = new StringBuilder();
-		String line;
-		while ((line = rd.readLine()) != null) {
-			sb.append(line);
-		}
-		rd.close();
+	        // The API response is in the input stream on success and the error stream on failure.
+	        BufferedReader rd;
+	        try {
+	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+	        }
+	        catch (IOException e) {
+	            rd = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+	        }
+	        StringBuilder sb = new StringBuilder();
+	        String line;
+	        while ((line = rd.readLine()) != null) {
+	            sb.append(line);
+	        }
+	        rd.close();
 
-		// If it won't parse as an object, it'll parse as an array.
-		Object response;
-		try {
-			response = new JSONObject(sb.toString());
-		}
-		catch (JSONException e) {
-			response = new JSONArray(sb.toString());
-		}
-		return response;
+	        // If it won't parse as an object, it'll parse as an array.
+	        Object response;
+	        try {
+	            response = new JSONObject(sb.toString());
+	        }
+	        catch (JSONException e) {
+	            response = new JSONArray(sb.toString());
+	        }
+	        return response;
+	    }
+	    catch (MalformedURLException mue)
+	    {
+	        throw new AthenahealthException("Invalid URL", mue);
+	    }
+        catch (IOException ioe)
+        {
+            throw new AthenahealthException("I/O error during call", ioe);
+        }
 	}
-
 
 	/**
 	 * Perform a GET request.
