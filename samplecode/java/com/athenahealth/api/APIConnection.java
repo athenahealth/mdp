@@ -222,7 +222,9 @@ public class APIConnection {
 	 * @param headers    key-value pairs of request headers
 	 * @param secondcall true if this is the retried request
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+	 * @throws AthenahealthException If there is an error making the call.
+	 *                               API-level errors are reported in the return-value.
 	 */
 	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
 	    try {
@@ -294,9 +296,11 @@ public class APIConnection {
 	 *
 	 * @param path URI to access
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object GET(String path) throws Exception {
+	public Object GET(String path) throws AthenahealthException {
 		return GET(path, null, null);
 	}
 
@@ -306,9 +310,11 @@ public class APIConnection {
 	 * @param path       URI to access
 	 * @param parameters the request parameters
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object GET(String path, Map<String, String> parameters) throws Exception {
+	public Object GET(String path, Map<String, String> parameters) throws AthenahealthException {
 		return GET(path, parameters, null);
 	}
 
@@ -319,9 +325,11 @@ public class APIConnection {
 	 * @param parameters the request parameters
 	 * @param headers    the request headers
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object GET(String path, Map<String, String> parameters, Map<String, String> headers) throws Exception {
+	public Object GET(String path, Map<String, String> parameters, Map<String, String> headers) throws AthenahealthException {
 		String query = "";
 		if (parameters != null) {
 			query = "?" + urlencode(parameters);
@@ -335,9 +343,11 @@ public class APIConnection {
 	 *
 	 * @param path URI to access
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object POST(String path) throws Exception {
+	public Object POST(String path) throws AthenahealthException {
 		return POST(path, null, null);
 	}
 
@@ -347,9 +357,11 @@ public class APIConnection {
 	 * @param path       URI to access
 	 * @param parameters the request parameters
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object POST(String path, Map<String, String> parameters) throws Exception {
+	public Object POST(String path, Map<String, String> parameters) throws AthenahealthException {
 		return POST(path, parameters, null);
 	}
 
@@ -360,9 +372,11 @@ public class APIConnection {
 	 * @param parameters the request parameters
 	 * @param headers    the request headers
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object POST(String path, Map<String, String> parameters, Map<String, String> headers) throws Exception {
+	public Object POST(String path, Map<String, String> parameters, Map<String, String> headers) throws AthenahealthException {
 		return call("POST", path, parameters, headers, false);
 	}
 
@@ -372,9 +386,11 @@ public class APIConnection {
 	 *
 	 * @param path URI to access
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object PUT(String path) throws Exception {
+	public Object PUT(String path) throws AthenahealthException {
 		return PUT(path, null, null);
 	}
 
@@ -384,9 +400,11 @@ public class APIConnection {
 	 * @param path       URI to access
 	 * @param parameters the request parameters
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object PUT(String path, Map<String, String> parameters) throws Exception {
+	public Object PUT(String path, Map<String, String> parameters) throws AthenahealthException {
 		return PUT(path, parameters, null);
 	}
 
@@ -397,9 +415,11 @@ public class APIConnection {
 	 * @param parameters the request parameters
 	 * @param headers    the request headers
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object PUT(String path, Map<String, String> parameters, Map<String, String> headers) throws Exception {
+	public Object PUT(String path, Map<String, String> parameters, Map<String, String> headers) throws AthenahealthException {
 		return call("PUT", path, parameters, headers, false);
 	}
 
@@ -409,9 +429,11 @@ public class APIConnection {
 	 *
 	 * @param path URI to access
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object DELETE(String path) throws Exception {
+	public Object DELETE(String path) throws AthenahealthException {
 		return DELETE(path, null, null);
 	}
 
@@ -421,9 +443,11 @@ public class APIConnection {
 	 * @param path       URI to access
 	 * @param parameters the request parameters
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object DELETE(String path, Map<String, String> parameters) throws Exception {
+	public Object DELETE(String path, Map<String, String> parameters) throws AthenahealthException {
 		return DELETE(path, parameters, null);
 	}
 
@@ -434,9 +458,11 @@ public class APIConnection {
 	 * @param parameters the request parameters
 	 * @param headers    the request headers
 	 * @return the JSON-decoded response
-	 * @throws Exception
+	 *
+     * @throws AthenahealthException If there is an error making the call.
+     *                               API-level errors are reported in the return-value.
 	 */
-	public Object DELETE(String path, Map<String, String> parameters, Map<String, String> headers) throws Exception {
+	public Object DELETE(String path, Map<String, String> parameters, Map<String, String> headers) throws AthenahealthException {
 		String query = "";
 		if (parameters != null) {
 			query = "?" + urlencode(parameters);
