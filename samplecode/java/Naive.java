@@ -13,18 +13,16 @@
  *   implied.  See the License for the specific language governing
  *   permissions and limitations under the License.
  */
-																		
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.Iterator;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 class Naive {
@@ -135,7 +133,7 @@ class Naive {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		String encoding = "UTF-8";
-		for (Map.Entry pair : parameters.entrySet()) {
+		for (Map.Entry<?,?> pair : parameters.entrySet()) {
 			String k = pair.getKey().toString();
 			String v = pair.getValue().toString();
 			String current = URLEncoder.encode(k, encoding) + "=" + URLEncoder.encode(v, encoding);
