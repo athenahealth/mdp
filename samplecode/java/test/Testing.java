@@ -35,6 +35,7 @@ class Testing {
 		String practiceid = "000000";
 		
 		APIConnection api = new APIConnection(version, key, secret, practiceid);
+		api.authenticate();
 		
 		// If you want to set the practice ID after construction, this is how.
 		// api.setPracticeID("000000");

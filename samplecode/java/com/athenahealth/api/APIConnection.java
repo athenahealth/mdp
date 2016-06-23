@@ -18,6 +18,10 @@ package com.athenahealth.api;
 
 import java.util.Collections;
 import java.util.Map;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
+
 import java.util.HashMap;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -61,6 +65,13 @@ public class APIConnection {
 	private String base_url;
 	private String token;
 
+	/**
+	 * Optional customized SSLSocketFactory.
+	 */
+	private SSLSocketFactory _sslSocketFactory;
+	private int _socketConnectTimeout =  5 * 1000;
+	private int _socketReadTimeout    = 20 * 2000;
+
 	// http://stackoverflow.com/q/507602
 	private static final Map<String, String> auth_prefixes;
 	static {
@@ -95,24 +106,101 @@ public class APIConnection {
      * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
 	public APIConnection(String version, String key, String secret, String practiceid) throws AthenahealthException {
-		this.version = version;
+	    if(!auth_prefixes.containsKey(version))
+	        throw new IllegalArgumentException("Unknown version: " + version);
+
+	    this.version = version;
 		this.key = key;
 		this.secret = secret;
 		this.practiceid = practiceid;
 		this.base_url = "https://api.athenahealth.com";
-
-		authenticate();
 	}
 
 	/**
-	 * Perform the steps of basic authentication.
+	 * Sets a custom {@link SSLSocketFactory} to be used with this connection.
+	 * Allows a client to customize the various protocols and ciphers used,
+	 * as well as providing a client TLS certificate if necessary for mutual
+	 * authentication.
+     *
+	 * @param ssf The SSLSocketFactory to use for connections.
 	 */
-	private void authenticate() throws AuthenticationException {
+	public void setSSLSocketFactory(SSLSocketFactory ssf) {
+	    _sslSocketFactory = ssf;
+	}
+
+    /**
+     * Gets the custom {@link SSLSocketFactory} being used with this connection.
+     *
+     * @param The SSLSocketFactory to use for connections, or <code>null</code>
+     *        if no customized SSLSocketFactory has been configured for use.
+     */
+	public SSLSocketFactory getSSLSocketFactory() {
+	    return _sslSocketFactory;
+	}
+
+	/**
+	 * Sets the socket connection timeout for API connections.
+	 * A timeout of zero (0) means "wait indefinitely".
+	 *
+	 * @param timeout The socket connection timeout, in ms.
+	 */
+	public void setSocketConnectTimeout(int timeout) {
+	    _socketConnectTimeout = timeout;
+	}
+
+	/**
+     * Gets the socket connection timeout for API connections.
+     * A timeout of zero (0) means "wait indefinitely".
+     *
+     * @return The socket connection timeout, in ms.
+     */
+	public int getSocketConnectTimeout() {
+	    return _socketConnectTimeout;
+	}
+
+	/**
+     * Sets the socket read timeout for API connections.
+     * A timeout of zero (0) means "wait indefinitely".
+     *
+     * @param timeout The socket connection timeout, in ms.
+     */
+    public void setSocketReadTimeout(int timeout) {
+        _socketReadTimeout = timeout;
+    }
+
+    /**
+     * Gets the socket read timeout for API connections.
+     * A timeout of zero (0) means "wait indefinitely".
+     *
+     * @return The socket connection timeout, in ms.
+     */
+    public int getSocketReadTimeout() {
+        return _socketReadTimeout;
+    }
+
+    private HttpURLConnection openConnection(URL url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        if(conn instanceof HttpsURLConnection) {
+            SSLSocketFactory ssf = getSSLSocketFactory();
+            if(null != ssf)
+                ((HttpsURLConnection)conn).setSSLSocketFactory(ssf);
+        }
+
+        conn.setConnectTimeout(getSocketConnectTimeout());
+        conn.setReadTimeout(getSocketReadTimeout());
+        
+        return conn;
+	}
+
+	/**
+	 * Authenticate to the athenahealth API service.
+	 */
+	public void authenticate() throws AuthenticationException {
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
 	        URL url = new URL(path_join(base_url, auth_prefixes.get(version), "/token"));
-	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+	        HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
 	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes());
@@ -230,7 +318,7 @@ public class APIConnection {
 	    try {
 	        // Join up a url and open a connection
 	        URL url = new URL(path_join(base_url, version, practiceid, path));
-	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod(verb);
 
 	        // Set the Authorization header using the token, then do the rest of the headers
