@@ -69,6 +69,8 @@ public class APIConnection {
 	 * Optional customized SSLSocketFactory.
 	 */
 	private SSLSocketFactory _sslSocketFactory;
+	private int _socketConnectTimeout =  5 * 1000;
+	private int _socketReadTimeout    = 20 * 2000;
 
 	// http://stackoverflow.com/q/507602
 	private static final Map<String, String> auth_prefixes;
@@ -104,7 +106,10 @@ public class APIConnection {
      * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
 	public APIConnection(String version, String key, String secret, String practiceid) throws AthenahealthException {
-		this.version = version;
+	    if(!auth_prefixes.containsKey(version))
+	        throw new IllegalArgumentException("Unknown version: " + version);
+
+	    this.version = version;
 		this.key = key;
 		this.secret = secret;
 		this.practiceid = practiceid;
@@ -134,6 +139,60 @@ public class APIConnection {
 	}
 
 	/**
+	 * Sets the socket connection timeout for API connections.
+	 * A timeout of zero (0) means "wait indefinitely".
+	 *
+	 * @param timeout The socket connection timeout, in ms.
+	 */
+	public void setSocketConnectTimeout(int timeout) {
+	    _socketConnectTimeout = timeout;
+	}
+
+	/**
+     * Gets the socket connection timeout for API connections.
+     * A timeout of zero (0) means "wait indefinitely".
+     *
+     * @return The socket connection timeout, in ms.
+     */
+	public int getSocketConnectTimeout() {
+	    return _socketConnectTimeout;
+	}
+
+	/**
+     * Sets the socket read timeout for API connections.
+     * A timeout of zero (0) means "wait indefinitely".
+     *
+     * @param timeout The socket connection timeout, in ms.
+     */
+    public void setSocketReadTimeout(int timeout) {
+        _socketReadTimeout = timeout;
+    }
+
+    /**
+     * Gets the socket read timeout for API connections.
+     * A timeout of zero (0) means "wait indefinitely".
+     *
+     * @return The socket connection timeout, in ms.
+     */
+    public int getSocketReadTimeout() {
+        return _socketReadTimeout;
+    }
+
+    private HttpURLConnection openConnection(URL url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        if(conn instanceof HttpsURLConnection) {
+            SSLSocketFactory ssf = getSSLSocketFactory();
+            if(null != ssf)
+                ((HttpsURLConnection)conn).setSSLSocketFactory(ssf);
+        }
+
+        conn.setConnectTimeout(getSocketConnectTimeout());
+        conn.setReadTimeout(getSocketReadTimeout());
+        
+        return conn;
+	}
+
+	/**
 	 * Authenticate to the athenahealth API service.
 	 */
 	public void authenticate() throws AuthenticationException {
@@ -141,12 +200,7 @@ public class APIConnection {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
 	        URL url = new URL(path_join(base_url, auth_prefixes.get(version), "/token"));
-	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-	        if(conn instanceof HttpsURLConnection) {
-	            SSLSocketFactory ssf = getSSLSocketFactory();
-	            if(null != ssf)
-	                ((HttpsURLConnection)conn).setSSLSocketFactory(ssf);
-	        }
+	        HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
 	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes());
@@ -264,12 +318,7 @@ public class APIConnection {
 	    try {
 	        // Join up a url and open a connection
 	        URL url = new URL(path_join(base_url, version, practiceid, path));
-	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            if(conn instanceof HttpsURLConnection) {
-                SSLSocketFactory ssf = getSSLSocketFactory();
-                if(null != ssf)
-                    ((HttpsURLConnection)conn).setSSLSocketFactory(ssf);
-            }
+            HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod(verb);
 
 	        // Set the Authorization header using the token, then do the rest of the headers
