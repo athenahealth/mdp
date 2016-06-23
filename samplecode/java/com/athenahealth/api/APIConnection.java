@@ -265,6 +265,11 @@ public class APIConnection {
 	        // Join up a url and open a connection
 	        URL url = new URL(path_join(base_url, version, practiceid, path));
 	        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            if(conn instanceof HttpsURLConnection) {
+                SSLSocketFactory ssf = getSSLSocketFactory();
+                if(null != ssf)
+                    ((HttpsURLConnection)conn).setSSLSocketFactory(ssf);
+            }
 	        conn.setRequestMethod(verb);
 
 	        // Set the Authorization header using the token, then do the rest of the headers
