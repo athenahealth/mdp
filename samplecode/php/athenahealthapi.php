@@ -167,7 +167,7 @@ class APIConnection {
      * @access private
      */
     private function url_join() {
-        return join('/', array_map(function ($p) { return trim($p, '/'); }, func_get_args()));
+        return join('/', array_map(function ($p) { return trim($p, '/'); }, array_filter(func_get_args())));
     }
     
     /**
