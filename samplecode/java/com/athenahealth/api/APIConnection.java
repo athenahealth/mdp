@@ -279,7 +279,12 @@ public class APIConnection {
 		try {
 		    for (Map.Entry<?,?> pair : parameters.entrySet()) {
 		        String k = pair.getKey().toString();
-		        String v = pair.getValue().toString();
+		        String v;
+		        if(null == pair.getValue())
+		            v = "null";
+		        else
+		            v = pair.getValue().toString();
+
 		        String current = URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8");
 
 		        if (first) {
