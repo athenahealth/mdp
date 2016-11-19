@@ -29,8 +29,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.DataOutputStream;
+import java.io.Writer;
 import java.io.IOException;
 import org.apache.commons.codec.binary.Base64;
 import org.json.JSONObject;
@@ -57,7 +58,6 @@ import org.json.JSONException;
  * retried.
  */
 public class APIConnection {
-
 	private String key;
 	private String secret;
 	private String version;
@@ -188,7 +188,7 @@ public class APIConnection {
 
         conn.setConnectTimeout(getSocketConnectTimeout());
         conn.setReadTimeout(getSocketReadTimeout());
-        
+
         return conn;
 	}
 
@@ -210,8 +210,8 @@ public class APIConnection {
 	        Map<String, String> parameters = new HashMap<String, String>();
 	        parameters.put("grant_type", "client_credentials");
 
-	        DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-	        wr.writeBytes(urlencode(parameters));
+	        Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+	        wr.write(urlencode(parameters));
 	        wr.flush();
 	        wr.close();
 
@@ -337,8 +337,8 @@ public class APIConnection {
 	        // Set the request parameters, if there are any
 	        if (parameters != null) {
 	            conn.setDoOutput(true);
-	            DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-	            wr.writeBytes(urlencode(parameters));
+	            Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+	            wr.write(urlencode(parameters));
 	            wr.flush();
 	            wr.close();
 	        }
