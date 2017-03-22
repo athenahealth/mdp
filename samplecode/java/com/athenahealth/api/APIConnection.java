@@ -13,7 +13,6 @@
  *   implied.  See the License for the specific language governing
  *   permissions and limitations under the License.
  */
-
 package com.athenahealth.api;
 
 import java.util.Collections;
@@ -23,6 +22,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.HttpURLConnection;
@@ -117,6 +117,31 @@ public class APIConnection {
 	}
 
 	/**
+	 * Sets the base URL for athenanet.
+	 *
+	 * @param baseURL The base URL for contacting athenanet.
+	 */
+	public void setBaseURL(String baseURL)
+	{
+	    // Remove any trailing slashes
+	    if(null != baseURL)
+	        while(baseURL.endsWith("/"))
+	            baseURL = baseURL.substring(0, baseURL.length() - 1);
+
+	    base_url = baseURL;
+	}
+
+    /**
+     * Gets the base URL for athenanet.
+     *
+     * @return The base URL for contacting athenanet.
+     */
+	public String getBaseURL()
+	{
+	    return base_url;
+	}
+
+	/**
 	 * Sets a custom {@link SSLSocketFactory} to be used with this connection.
 	 * Allows a client to customize the various protocols and ciphers used,
 	 * as well as providing a client TLS certificate if necessary for mutual
@@ -199,7 +224,7 @@ public class APIConnection {
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
-	        URL url = new URL(path_join(base_url, auth_prefixes.get(version), "/token"));
+	        URL url = new URL(path_join(getBaseURL(), auth_prefixes.get(version), "/token"));
 	        HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
@@ -322,9 +347,11 @@ public class APIConnection {
 	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
 	    try {
 	        // Join up a url and open a connection
-	        URL url = new URL(path_join(base_url, version, practiceid, path));
+	        URL url = new URL(path_join(getBaseURL(), version, practiceid, path));
             HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod(verb);
+
+	        conn.setRequestProperty("Content-Type",  "application/x-www-form-urlencoded; charset=UTF-8");
 
 	        // Set the Authorization header using the token, then do the rest of the headers
 	        conn.setRequestProperty("Authorization", "Bearer " + token);
@@ -365,13 +392,34 @@ public class APIConnection {
 	        rd.close();
 
 	        // If it won't parse as an object, it'll parse as an array.
+	        String rawResponse = sb.toString();
 	        Object response;
 	        try {
-	            response = new JSONObject(sb.toString());
+	            response = new JSONObject(rawResponse);
 	        }
 	        catch (JSONException e) {
-	            response = new JSONArray(sb.toString());
+	            try {
+	                response = new JSONArray(rawResponse);
+	            }
+	            catch (JSONException e2)
+	            {
+	                if(Boolean.getBoolean("com.athenahealth.api.dump-response-on-JSON-error"))
+	                {
+	                    System.err.println("Server response code: " + conn.getResponseCode());
+	                    Map<String,List<String>> responseHeaders = conn.getHeaderFields();
+	                    for(Map.Entry<String,List<String>> header : responseHeaders.entrySet())
+	                        for(String value : header.getValue())
+	                        {
+	                            if(null == header.getKey() || "".equals(header.getKey()))
+	                                System.err.println("Status: " + value);
+	                            else
+	                                System.err.print(header.getKey() + "=" + value);
+	                        }
+	                }
+	                throw new AthenahealthException("Cannot parse response from server as JSONObject or JSONArray: " + rawResponse, e2);
+	            }
 	        }
+
 	        return response;
 	    }
 	    catch (MalformedURLException mue)
