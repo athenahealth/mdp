@@ -391,8 +391,17 @@ public class APIConnection {
 	        }
 	        rd.close();
 
+            String rawResponse = sb.toString();
+
+            if(503 == conn.getResponseCode())
+	            throw new AthenahealthException("Service Temporarily Unavailable: " + rawResponse);
+
+            if(!"application/json".equals(conn.getContentType()))
+                throw new AthenahealthException("Expected application/json response, got "
+                                                + conn.getContentType() + " instead."
+                                                + " Content=" + rawResponse);
+
 	        // If it won't parse as an object, it'll parse as an array.
-	        String rawResponse = sb.toString();
 	        Object response;
 	        try {
 	            response = new JSONObject(rawResponse);
@@ -413,7 +422,7 @@ public class APIConnection {
 	                            if(null == header.getKey() || "".equals(header.getKey()))
 	                                System.err.println("Status: " + value);
 	                            else
-	                                System.err.print(header.getKey() + "=" + value);
+	                                System.err.println(header.getKey() + "=" + value);
 	                        }
 	                }
 	                throw new AthenahealthException("Cannot parse response from server as JSONObject or JSONArray: " + rawResponse, e2);
