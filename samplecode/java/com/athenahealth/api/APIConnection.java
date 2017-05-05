@@ -396,9 +396,17 @@ public class APIConnection {
             if(503 == conn.getResponseCode())
 	            throw new AthenahealthException("Service Temporarily Unavailable: " + rawResponse);
 
-            if(!"application/json".equals(conn.getContentType()))
+            String contentType = conn.getContentType();
+            if(null == contentType)
+                throw new AthenahealthException("Expected application/json response, got <null> instead.");
+
+            int pos = contentType.indexOf(';');
+            if(pos >= 0)
+                contentType = contentType.substring(0, pos).trim();
+
+            if(!"application/json".equals(contentType))
                 throw new AthenahealthException("Expected application/json response, got "
-                                                + conn.getContentType() + " instead."
+                                                + contentType + " instead."
                                                 + " Content=" + rawResponse);
 
 	        // If it won't parse as an object, it'll parse as an array.
