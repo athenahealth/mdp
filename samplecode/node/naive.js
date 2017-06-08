@@ -43,6 +43,11 @@ function path_join() {
 	return trimmed.join('')
 }
 
+// Since we need to append the parameters of the request differently from the path
+function param_join(path, params) {
+	var args = querystring.stringify(params);
+	 return path + '?' + args
+}
 // Since we want these functions to run in a set order, we need a way to signal for the next one.
 var signal = new events.EventEmitter
 
@@ -87,12 +92,11 @@ function departments() {
 	var parameters = {
 		limit: 1,
 	}
-	var query = '?' + querystring.stringify(parameters)
 
 	var req = https.request({
 		hostname: 'api.athenahealth.com',
 		method: 'GET',
-		path: path_join(version, practiceid, '/departments', query),
+		path: param_join(path_join(version, practiceid, '/departments'), parameters),
 		// We set the auth header ourselves this time, because we have a token now.
 		headers: {'authorization': 'Bearer ' + token},
 	}, function(response) {
