@@ -11,7 +11,7 @@ See our [community](https://github.com/athenahealth/mdp/tree/master/community) f
 
 License
 -------
-Copyright 2014 athenahealth, Inc.
+Copyright 2017 athenahealth, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use the files included in this repository except in compliance with the License.  You
