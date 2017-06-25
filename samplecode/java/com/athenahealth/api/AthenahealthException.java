@@ -24,8 +24,8 @@ public class AthenahealthException
      * @param message An explanation for the error.
      * @param cause The root cause of the error.
      */
-    public AthenahealthException(String message, Throwable rootCause)
+    public AthenahealthException(String message, Throwable cause)
     {
-        super(message, rootCause);
+        super(message, cause);
     }
 }
