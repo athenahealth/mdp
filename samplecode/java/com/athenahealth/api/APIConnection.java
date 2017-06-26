@@ -220,7 +220,7 @@ public class APIConnection {
 	/**
 	 * Authenticate to the athenahealth API service.
 	 */
-	public void authenticate() throws AuthenticationException {
+	public void authenticate() throws AthenahealthException {
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
@@ -239,6 +239,10 @@ public class APIConnection {
 	        wr.write(urlencode(parameters));
 	        wr.flush();
 	        wr.close();
+
+	        int responseCode = conn.getResponseCode();
+	        if(503 == responseCode)
+	            throw new UnavailableException(conn.getResponseMessage());
 
 	        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 	        StringBuilder sb = new StringBuilder();
@@ -376,13 +380,40 @@ public class APIConnection {
 	            return call(verb, path, parameters, headers, true);
 	        }
 
-	        // The API response is in the input stream on success and the error stream on failure.
+	        for(Map.Entry<String,List<String>> entry : conn.getHeaderFields().entrySet())
+	        {
+	            System.out.print("Header [" + entry.getKey() + "]=[");
+	            for(String value : entry.getValue())
+	                System.out.print("[" + value + "]");
+	            System.out.println("]");
+	        }
+            String contentType = conn.getContentType();
+            System.out.println("Content-Type is " + contentType);
+            String charset = "ISO-8859-1";
+            charset = "UTF-8";
+            int pos = contentType.indexOf(';');
+            if(pos >= 0) {
+                String lowerContentType = contentType.toLowerCase();
+                int charsetPos = lowerContentType.indexOf("charset=");
+                if(charsetPos >= 0) {
+                    int end = lowerContentType.indexOf(' ', charsetPos + "charset=".length());
+                    if(end < 0)
+                        charset = lowerContentType.substring(charsetPos + "charset=".length());
+                    else
+                        charset = lowerContentType.substring(charsetPos + "charset=".length(), end);
+
+                    System.out.println("Parsed charset " + charset + " to from Content-Type header");
+                }
+                contentType = contentType.substring(0, pos).trim();
+            }
+
+            // The API response is in the input stream on success and the error stream on failure.
 	        BufferedReader rd;
 	        try {
-	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), charset));
 	        }
 	        catch (IOException e) {
-	            rd = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+	            rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), charset));
 	        }
 	        StringBuilder sb = new StringBuilder();
 	        String line;
@@ -396,13 +427,8 @@ public class APIConnection {
             if(503 == conn.getResponseCode())
 	            throw new AthenahealthException("Service Temporarily Unavailable: " + rawResponse);
 
-            String contentType = conn.getContentType();
             if(null == contentType)
                 throw new AthenahealthException("Expected application/json response, got <null> instead.");
-
-            int pos = contentType.indexOf(';');
-            if(pos >= 0)
-                contentType = contentType.substring(0, pos).trim();
 
             if(!"application/json".equals(contentType))
                 throw new AthenahealthException("Expected application/json response, got "
