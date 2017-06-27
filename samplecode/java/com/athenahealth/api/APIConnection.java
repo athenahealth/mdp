@@ -380,15 +380,7 @@ public class APIConnection {
 	            return call(verb, path, parameters, headers, true);
 	        }
 
-	        for(Map.Entry<String,List<String>> entry : conn.getHeaderFields().entrySet())
-	        {
-	            System.out.print("Header [" + entry.getKey() + "]=[");
-	            for(String value : entry.getValue())
-	                System.out.print("[" + value + "]");
-	            System.out.println("]");
-	        }
             String contentType = conn.getContentType();
-            System.out.println("Content-Type is " + contentType);
             String charset = "ISO-8859-1";
             charset = "UTF-8";
             int pos = contentType.indexOf(';');
@@ -401,8 +393,6 @@ public class APIConnection {
                         charset = lowerContentType.substring(charsetPos + "charset=".length());
                     else
                         charset = lowerContentType.substring(charsetPos + "charset=".length(), end);
-
-                    System.out.println("Parsed charset " + charset + " to from Content-Type header");
                 }
                 contentType = contentType.substring(0, pos).trim();
             }
