@@ -24,6 +24,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.HttpURLConnection;
@@ -497,7 +498,9 @@ public class APIConnection {
 
 	    int pos = contentType.indexOf(';');
 	    if(pos >= 0) {
-	        String lowerContentType = contentType.toLowerCase();
+	        // Use of Locale.US here is justified, since the content-type
+	        // header should only contain ASCII characters.
+	        String lowerContentType = contentType.toLowerCase(Locale.US);
 	        String charsetParameter = "charset=";
 	        int charsetParameterLength = charsetParameter.length();
 	        int charsetPos = lowerContentType.indexOf(charsetParameter);
