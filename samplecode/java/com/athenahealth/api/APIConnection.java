@@ -222,6 +222,8 @@ public class APIConnection {
 	 * Authenticate to the athenahealth API service.
 	 */
 	public void authenticate() throws AthenahealthException {
+	    BufferedReader rd = null;
+	    Writer wr = null;
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
@@ -234,7 +236,7 @@ public class APIConnection {
 
 	        conn.setDoOutput(true);
 
-	        Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+	        wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
 	        wr.write(urlencode(Collections.singletonMap("grant_type", "client_credentials")));
 	        wr.flush();
 	        wr.close();
@@ -243,9 +245,9 @@ public class APIConnection {
 	        if(503 == responseCode)
 	            throw new UnavailableException(conn.getResponseMessage());
 
-	        ResponseInfo info = getContentTypeAndCharset(conn, "UTF-8");
+	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
 
-	        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
+            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
 	        StringBuilder sb = new StringBuilder();
 	        String line;
 	        while ((line = rd.readLine()) != null) {
@@ -263,6 +265,14 @@ public class APIConnection {
 	    catch (IOException ioe)
 	    {
 	        throw new AuthenticationException("Error authenticating with server", ioe);
+	    }
+	    finally
+	    {
+            if(null != wr) try { wr.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+
+            if(null != rd) try { rd.close(); }
+	        catch (IOException ioe) { ioe.printStackTrace(); }
 	    }
 	}
 
@@ -349,6 +359,8 @@ public class APIConnection {
 	 *                               API-level errors are reported in the return-value.
 	 */
 	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
+	    Writer wr = null;
+	    BufferedReader rd = null;
 	    try {
 	        // Join up a url and open a connection
 	        URL url = new URL(path_join(getBaseURL(), version, practiceid, path));
@@ -368,7 +380,7 @@ public class APIConnection {
 	        // Set the request parameters, if there are any
 	        if (parameters != null) {
 	            conn.setDoOutput(true);
-	            Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+	            wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
 	            wr.write(urlencode(parameters));
 	            wr.flush();
 	            wr.close();
@@ -380,12 +392,11 @@ public class APIConnection {
 	            return call(verb, path, parameters, headers, true);
 	        }
 
-	        ResponseInfo info = getContentTypeAndCharset(conn, "UTF-8");
+	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
 
 	        String contentType = info.getContentType();
 
             // The API response is in the input stream on success and the error stream on failure.
-	        BufferedReader rd;
 	        try {
 	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
 	        }
@@ -450,6 +461,14 @@ public class APIConnection {
         {
             throw new AthenahealthException("I/O error during call", ioe);
         }
+        finally
+        {
+            if(null != wr) try { wr.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+
+            if(null != rd) try { rd.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+        }
 	}
 
 	private static class ResponseInfo
@@ -471,7 +490,7 @@ public class APIConnection {
 	    }
 	}
 
-	private ResponseInfo getContentTypeAndCharset(HttpURLConnection conn, String defaultCharset)
+	private ResponseInfo getResponseInfo(HttpURLConnection conn, String defaultCharset)
 	{
 	    String contentType = conn.getContentType();
         String charset = defaultCharset;
