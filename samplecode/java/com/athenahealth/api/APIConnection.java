@@ -233,11 +233,9 @@ public class APIConnection {
 	        conn.setRequestProperty("Authorization", "Basic " + auth);
 
 	        conn.setDoOutput(true);
-	        Map<String, String> parameters = new HashMap<String, String>();
-	        parameters.put("grant_type", "client_credentials");
 
 	        Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
-	        wr.write(urlencode(parameters));
+	        wr.write(urlencode(Collections.singletonMap("grant_type", "client_credentials")));
 	        wr.flush();
 	        wr.close();
 
