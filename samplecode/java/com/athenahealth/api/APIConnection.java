@@ -17,6 +17,7 @@ package com.athenahealth.api;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
@@ -265,6 +266,8 @@ public class APIConnection {
 	    }
 	}
 
+	private final Pattern PATH_SEPARATORS = Pattern.compile("^/+|/+$");
+
 	/**
 	 * Join arguments into a valid path.
 	 *
@@ -275,7 +278,7 @@ public class APIConnection {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
-			String current = arg.replaceAll("^/+|/+$", "");
+		    String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
 
 			// Skip empty strings
 			if (current.isEmpty()) {
@@ -308,13 +311,7 @@ public class APIConnection {
 		try {
 		    for (Map.Entry<?,?> pair : parameters.entrySet()) {
 		        String k = pair.getKey().toString();
-		        String v;
-		        if(null == pair.getValue())
-		            v = "null";
-		        else
-		            v = pair.getValue().toString();
-
-		        String current = URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8");
+		        String v = String.valueOf(pair.getValue());
 
 		        if (first) {
 		            first = false;
@@ -322,7 +319,10 @@ public class APIConnection {
 		        else {
 		            sb.append("&");
 		        }
-		        sb.append(current);
+                sb.append(URLEncoder.encode(k, "UTF-8"))
+                  .append('=')
+                  .append(URLEncoder.encode(v, "UTF-8"))
+                  ;
 		    }
 		} catch (UnsupportedEncodingException uee) {
 		    throw new InternalError("Java suddenly does not support UTF-8 character encoding");
