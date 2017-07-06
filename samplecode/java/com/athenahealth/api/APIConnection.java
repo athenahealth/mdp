@@ -17,12 +17,14 @@ package com.athenahealth.api;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.HttpURLConnection;
@@ -221,6 +223,8 @@ public class APIConnection {
 	 * Authenticate to the athenahealth API service.
 	 */
 	public void authenticate() throws AthenahealthException {
+	    BufferedReader rd = null;
+	    Writer wr = null;
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
@@ -228,15 +232,13 @@ public class APIConnection {
 	        HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
-	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes());
+	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes("UTF-8"));
 	        conn.setRequestProperty("Authorization", "Basic " + auth);
 
 	        conn.setDoOutput(true);
-	        Map<String, String> parameters = new HashMap<String, String>();
-	        parameters.put("grant_type", "client_credentials");
 
-	        Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
-	        wr.write(urlencode(parameters));
+	        wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+	        wr.write(urlencode(Collections.singletonMap("grant_type", "client_credentials")));
 	        wr.flush();
 	        wr.close();
 
@@ -244,7 +246,9 @@ public class APIConnection {
 	        if(503 == responseCode)
 	            throw new UnavailableException(conn.getResponseMessage());
 
-	        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
+
+            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
 	        StringBuilder sb = new StringBuilder();
 	        String line;
 	        while ((line = rd.readLine()) != null) {
@@ -263,7 +267,17 @@ public class APIConnection {
 	    {
 	        throw new AuthenticationException("Error authenticating with server", ioe);
 	    }
+	    finally
+	    {
+            if(null != wr) try { wr.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+
+            if(null != rd) try { rd.close(); }
+	        catch (IOException ioe) { ioe.printStackTrace(); }
+	    }
 	}
+
+	private final Pattern PATH_SEPARATORS = Pattern.compile("^/+|/+$");
 
 	/**
 	 * Join arguments into a valid path.
@@ -275,7 +289,7 @@ public class APIConnection {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
-			String current = arg.replaceAll("^/+|/+$", "");
+		    String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
 
 			// Skip empty strings
 			if (current.isEmpty()) {
@@ -308,13 +322,7 @@ public class APIConnection {
 		try {
 		    for (Map.Entry<?,?> pair : parameters.entrySet()) {
 		        String k = pair.getKey().toString();
-		        String v;
-		        if(null == pair.getValue())
-		            v = "null";
-		        else
-		            v = pair.getValue().toString();
-
-		        String current = URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8");
+		        String v = String.valueOf(pair.getValue());
 
 		        if (first) {
 		            first = false;
@@ -322,7 +330,10 @@ public class APIConnection {
 		        else {
 		            sb.append("&");
 		        }
-		        sb.append(current);
+                sb.append(URLEncoder.encode(k, "UTF-8"))
+                  .append('=')
+                  .append(URLEncoder.encode(v, "UTF-8"))
+                  ;
 		    }
 		} catch (UnsupportedEncodingException uee) {
 		    throw new InternalError("Java suddenly does not support UTF-8 character encoding");
@@ -349,6 +360,8 @@ public class APIConnection {
 	 *                               API-level errors are reported in the return-value.
 	 */
 	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
+	    Writer wr = null;
+	    BufferedReader rd = null;
 	    try {
 	        // Join up a url and open a connection
 	        URL url = new URL(path_join(getBaseURL(), version, practiceid, path));
@@ -368,7 +381,7 @@ public class APIConnection {
 	        // Set the request parameters, if there are any
 	        if (parameters != null) {
 	            conn.setDoOutput(true);
-	            Writer wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
+	            wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
 	            wr.write(urlencode(parameters));
 	            wr.flush();
 	            wr.close();
@@ -380,40 +393,16 @@ public class APIConnection {
 	            return call(verb, path, parameters, headers, true);
 	        }
 
-	        for(Map.Entry<String,List<String>> entry : conn.getHeaderFields().entrySet())
-	        {
-	            System.out.print("Header [" + entry.getKey() + "]=[");
-	            for(String value : entry.getValue())
-	                System.out.print("[" + value + "]");
-	            System.out.println("]");
-	        }
-            String contentType = conn.getContentType();
-            System.out.println("Content-Type is " + contentType);
-            String charset = "ISO-8859-1";
-            charset = "UTF-8";
-            int pos = contentType.indexOf(';');
-            if(pos >= 0) {
-                String lowerContentType = contentType.toLowerCase();
-                int charsetPos = lowerContentType.indexOf("charset=");
-                if(charsetPos >= 0) {
-                    int end = lowerContentType.indexOf(' ', charsetPos + "charset=".length());
-                    if(end < 0)
-                        charset = lowerContentType.substring(charsetPos + "charset=".length());
-                    else
-                        charset = lowerContentType.substring(charsetPos + "charset=".length(), end);
+	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
 
-                    System.out.println("Parsed charset " + charset + " to from Content-Type header");
-                }
-                contentType = contentType.substring(0, pos).trim();
-            }
+	        String contentType = info.getContentType();
 
             // The API response is in the input stream on success and the error stream on failure.
-	        BufferedReader rd;
 	        try {
-	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), charset));
+	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
 	        }
 	        catch (IOException e) {
-	            rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), charset));
+	            rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), info.getCharset()));
 	        }
 	        StringBuilder sb = new StringBuilder();
 	        String line;
@@ -473,7 +462,86 @@ public class APIConnection {
         {
             throw new AthenahealthException("I/O error during call", ioe);
         }
+        finally
+        {
+            if(null != wr) try { wr.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+
+            if(null != rd) try { rd.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+        }
 	}
+
+	private static class ResponseInfo
+	{
+	    String contentType;
+	    String charset;
+
+	    ResponseInfo(String contentType, String charset) {
+	        this.contentType = contentType;
+	        this.charset = charset;
+	    }
+	    
+	    public String getContentType() { return contentType; }
+	    public String getCharset() { return charset; }
+	    
+	    @Override
+	    public String toString() {
+	        return "{ contentType=" + getContentType() + ", charset=" + getCharset() + " }";
+	    }
+	}
+
+	private ResponseInfo getResponseInfo(HttpURLConnection conn, String defaultCharset)
+	{
+	    String contentType = conn.getContentType();
+        String charset = defaultCharset;
+
+	    int pos = contentType.indexOf(';');
+	    if(pos >= 0) {
+	        // Use of Locale.US here is justified, since the content-type
+	        // header should only contain ASCII characters.
+	        String lowerContentType = contentType.toLowerCase(Locale.US);
+	        String charsetParameter = "charset=";
+	        int charsetParameterLength = charsetParameter.length();
+	        int charsetPos = lowerContentType.indexOf(charsetParameter);
+	        if(charsetPos >= 0) {
+	            int len = charsetPos + charsetParameterLength;
+	            int end = lowerContentType.indexOf(' ', len);
+	            // Use original contentType to get original capitalization
+	            if(end < 0)
+	                charset = contentType.substring(len);
+	            else
+	                charset = contentType.substring(len, end);
+	        }
+	        contentType = contentType.substring(0, pos).trim();
+	    }
+	    
+	    return new ResponseInfo(contentType, charset);
+	}
+
+    @SuppressWarnings("unused")
+    private void dumpHeaders(HttpURLConnection conn)
+    {
+        for(Map.Entry<String,List<String>> entry : conn.getHeaderFields().entrySet())
+        {
+            System.out.print("Header [");
+            if(null == entry.getKey()) // This is the HTTP response line
+                System.out.print("Response");
+            else
+                System.out.print(entry.getKey());
+
+            System.out.print("]=");
+            boolean first = true;
+            for(String value : entry.getValue()) {
+                if(first) first = false;
+                else System.out.print(",");
+                System.out.print("[");
+                System.out.print(value);
+                System.out.print("]");
+            }
+            System.out.println();
+        }
+    }
 
 	/**
 	 * Perform a GET request.
