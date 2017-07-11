@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.io.BufferedReader;
@@ -66,6 +67,7 @@ public class APIConnection {
 	private String practiceid;
 	private String base_url;
 	private String token;
+	private Charset httpAuthEncoding = Charset.forName("UTF-8");
 
 	/**
 	 * Optional customized SSLSocketFactory.
@@ -205,6 +207,42 @@ public class APIConnection {
         return _socketReadTimeout;
     }
 
+    /**
+     * Set the character encoding to use when preparing HTTP authentication
+     * credentials using base64 encoding. The default is UTF-8, as per
+     * athenaNET's documentation.
+     *
+     * @param encoding The character encoding to use.
+     */
+    public void setHTTPAuthEncoding(Charset encoding) {
+        if(null == encoding)
+            throw new IllegalArgumentException("Encoding must not be null");
+
+        httpAuthEncoding = encoding;
+    }
+
+    /**
+     * Set the character encoding to use when preparing HTTP authentication
+     * credentials using base64 encoding. The default is UTF-8, as per
+     * athenaNET's documentation.
+     *
+     * @param encoding The character encoding to use.
+     */
+    public void setHTTPAuthEncoding(String encoding) {
+        setHTTPAuthEncoding(Charset.forName(encoding));
+    }
+
+    /**
+     * Get the character encoding that will be used when preparing HTTP
+     * authentication credentials using base64 encoding.
+     * The default is UTF-8, as per athenaNET's documentation.
+     *
+     * @param encoding The character encoding to use.
+     */
+    public Charset getHTTPAuthEncoding() {
+        return httpAuthEncoding;
+    }
+
     private HttpURLConnection openConnection(URL url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         if(conn instanceof HttpsURLConnection) {
@@ -232,7 +270,8 @@ public class APIConnection {
 	        HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
-	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes("UTF-8"));
+	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes(getHTTPAuthEncoding()));
+
 	        conn.setRequestProperty("Authorization", "Basic " + auth);
 
 	        conn.setDoOutput(true);
@@ -481,10 +520,10 @@ public class APIConnection {
 	        this.contentType = contentType;
 	        this.charset = charset;
 	    }
-	    
+
 	    public String getContentType() { return contentType; }
 	    public String getCharset() { return charset; }
-	    
+
 	    @Override
 	    public String toString() {
 	        return "{ contentType=" + getContentType() + ", charset=" + getCharset() + " }";
@@ -515,7 +554,7 @@ public class APIConnection {
 	        }
 	        contentType = contentType.substring(0, pos).trim();
 	    }
-	    
+
 	    return new ResponseInfo(contentType, charset);
 	}
 
