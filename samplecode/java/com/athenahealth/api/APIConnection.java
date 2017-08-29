@@ -52,7 +52,7 @@ import org.json.JSONException;
  *
  * Whenever any of the HTTP request methods are called (GET, POST, etc.), the arguments are
  * converted into the proper form for the request.  The result is decoded from JSON and returned as
- * either a JSONObject, JSONArray, or byte array (for calls that return binary data).
+ * either a JSONObject or JSONArray.
  *
  * The HTTP request methods each have three signatures corresponding to common ways of making
  * requests: (1) just a URL, (2) URL with parameters, (3) URL with parameters and headers.  Each of
