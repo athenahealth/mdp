@@ -30,7 +30,9 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
@@ -401,6 +403,7 @@ public class APIConnection {
 	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
 	    Writer wr = null;
 	    BufferedReader rd = null;
+	    BufferedInputStream in = null;
 	    try {
 	        // Join up a url and open a connection
 	        URL url = new URL(path_join(getBaseURL(), version, practiceid, path));
@@ -436,58 +439,89 @@ public class APIConnection {
 
 	        String contentType = info.getContentType();
 
-            // The API response is in the input stream on success and the error stream on failure.
-	        try {
-	            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
-	        }
-	        catch (IOException e) {
-	            rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), info.getCharset()));
-	        }
-	        StringBuilder sb = new StringBuilder();
-	        String line;
-	        while ((line = rd.readLine()) != null) {
-	            sb.append(line);
-	        }
-	        rd.close();
-
-            String rawResponse = sb.toString();
-
-            if(503 == conn.getResponseCode())
-	            throw new AthenahealthException("Service Temporarily Unavailable: " + rawResponse);
-
-            if(null == contentType)
-                throw new AthenahealthException("Expected application/json response, got <null> instead.");
-
-            if(!"application/json".equals(contentType))
-                throw new AthenahealthException("Expected application/json response, got "
-                                                + contentType + " instead."
-                                                + " Content=" + rawResponse);
-
-	        // If it won't parse as an object, it'll parse as an array.
 	        Object response;
-	        try {
-	            response = new JSONObject(rawResponse);
-	        }
-	        catch (JSONException e) {
+	        // We may have binary data coming back. Only use text-oriented
+	        // readers when the stream is not binary.
+	        if(null != contentType && contentType.startsWith("image/"))
+	        {
+                // This is binary data.
+	            long contentLength = conn.getContentLengthLong();
+	            if(contentLength > Integer.MAX_VALUE)
+	                throw new AthenahealthException("Binary response too big: " + contentLength + " > " + Integer.MAX_VALUE);
+
+	            ByteArrayOutputStream baos = new ByteArrayOutputStream((int)contentLength);
 	            try {
-	                response = new JSONArray(rawResponse);
+	                in = new BufferedInputStream(conn.getInputStream());
 	            }
-	            catch (JSONException e2)
-	            {
-	                if(Boolean.getBoolean("com.athenahealth.api.dump-response-on-JSON-error"))
-	                {
-	                    System.err.println("Server response code: " + conn.getResponseCode());
-	                    Map<String,List<String>> responseHeaders = conn.getHeaderFields();
-	                    for(Map.Entry<String,List<String>> header : responseHeaders.entrySet())
-	                        for(String value : header.getValue())
-	                        {
-	                            if(null == header.getKey() || "".equals(header.getKey()))
-	                                System.err.println("Status: " + value);
-	                            else
-	                                System.err.println(header.getKey() + "=" + value);
-	                        }
+	            catch (IOException ioe) {
+                    in = new BufferedInputStream(conn.getErrorStream());
+	            }
+	            byte[] buffer = new byte[4096];
+	            int c;
+	            while (-1 != (c = in.read(buffer)))
+	                baos.write(buffer, 0, c);
+
+                baos.close();
+
+                response = new JSONObject()
+                        .put("binary", "true")
+                        .put("contentType", conn.getContentType())
+                        .put("contents", baos.toByteArray());
+	        }
+	        else
+	        {
+	            // The API response is in the input stream on success and the error stream on failure.
+	            try {
+	                rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
+	            }
+	            catch (IOException e) {
+	                rd = new BufferedReader(new InputStreamReader(conn.getErrorStream(), info.getCharset()));
+	            }
+	            StringBuilder sb = new StringBuilder();
+	            String line;
+	            while ((line = rd.readLine()) != null) {
+	                sb.append(line);
+	            }
+	            rd.close();
+
+	            String rawResponse = sb.toString();
+
+	            if(503 == conn.getResponseCode())
+	                throw new AthenahealthException("Service Temporarily Unavailable: " + rawResponse);
+
+	            if(null == contentType)
+	                throw new AthenahealthException("Expected application/json response, got <null> instead.");
+
+	            if(!"application/json".equals(contentType))
+	                throw new AthenahealthException("Expected application/json response, got "
+	                        + contentType + " instead."
+	                        + " Content=" + rawResponse);
+
+	            // If it won't parse as an object, it'll parse as an array.
+	            try {
+	                response = new JSONObject(rawResponse);
+	            }
+	            catch (JSONException e) {
+	                try {
+	                    response = new JSONArray(rawResponse);
 	                }
-	                throw new AthenahealthException("Cannot parse response from server as JSONObject or JSONArray: " + rawResponse, e2);
+	                catch (JSONException e2)
+	                {
+	                    if(Boolean.getBoolean("com.athenahealth.api.dump-response-on-JSON-error"))
+	                    {
+	                        System.err.println("Server response code: " + conn.getResponseCode());
+	                        Map<String,List<String>> responseHeaders = conn.getHeaderFields();
+	                        for(Map.Entry<String,List<String>> header : responseHeaders.entrySet())
+	                            for(String value : header.getValue())
+	                            {
+	                                if(null == header.getKey() || "".equals(header.getKey()))
+	                                    System.err.println("Status: " + value);
+	                                else
+	                                    System.err.println(header.getKey() + "=" + value);
+	                            }
+	                    }
+	                    throw new AthenahealthException("Cannot parse response from server as JSONObject or JSONArray: " + rawResponse, e2);
+	                }
 	            }
 	        }
 
@@ -504,6 +538,9 @@ public class APIConnection {
         finally
         {
             if(null != wr) try { wr.close(); }
+            catch (IOException ioe) { ioe.printStackTrace(); }
+
+            if(null != in) try { in.close(); }
             catch (IOException ioe) { ioe.printStackTrace(); }
 
             if(null != rd) try { rd.close(); }
