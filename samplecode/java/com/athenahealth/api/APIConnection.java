@@ -306,7 +306,7 @@ public class APIConnection {
         }
 	    catch (IOException ioe)
 	    {
-	        throw new AuthenticationException("Error authenticating with server", ioe);
+	        throw new CommunicationException("Error authenticating with server", ioe);
 	    }
 	    finally
 	    {
@@ -487,7 +487,7 @@ public class APIConnection {
 	            String rawResponse = sb.toString();
 
 	            if(503 == conn.getResponseCode())
-	                throw new AthenahealthException("Service Temporarily Unavailable: " + rawResponse);
+	                throw new UnavailableException("Service Temporarily Unavailable: " + rawResponse);
 
 	            if(null == contentType)
 	                throw new AthenahealthException("Expected application/json response, got <null> instead.");
@@ -533,7 +533,7 @@ public class APIConnection {
 	    }
         catch (IOException ioe)
         {
-            throw new AthenahealthException("I/O error during call", ioe);
+            throw new CommunicationException("I/O error during call", ioe);
         }
         finally
         {
