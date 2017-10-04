@@ -5,8 +5,8 @@ package com.athenahealth.api;
  * server has returned a 503 response.
  */
 public class UnavailableException
-    extends AthenahealthException {
-    private static final long serialVersionUID = 1L;
+    extends CommunicationException {
+    private static final long serialVersionUID = 3791317316140344550L;
 
     /**
      * Creates a new UnavailableException with the specified detail message.
