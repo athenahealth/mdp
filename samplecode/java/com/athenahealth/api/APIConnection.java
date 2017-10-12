@@ -63,9 +63,9 @@ import org.json.JSONException;
  * retried.
  */
 public class APIConnection {
-	private String key;
-	private String secret;
-	private String version;
+	private final String key;
+	private final String secret;
+	private final String version;
 	private String practiceId;
 	private String base_url;
 	private String token;
@@ -79,13 +79,13 @@ public class APIConnection {
 	private int _socketReadTimeout    = 20 * 2000;
 
 	// http://stackoverflow.com/q/507602
-	private static final Map<String, String> auth_prefixes;
+	private static final Map<String, String> authPrefixes;
 	static {
 		Map<String, String> tempMap = new HashMap<String, String>();
 		tempMap.put("v1", "/oauth");
 		tempMap.put("preview1", "/oauthpreview");
 		tempMap.put("openpreview1", "/oauthopenpreview");
-		auth_prefixes = Collections.unmodifiableMap(tempMap);
+		authPrefixes = Collections.unmodifiableMap(tempMap);
 	}
 
 	/**
@@ -112,7 +112,7 @@ public class APIConnection {
      * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
 	public APIConnection(String version, String key, String secret, String practiceId) throws AthenahealthException {
-	    if(!auth_prefixes.containsKey(version))
+	    if(!authPrefixes.containsKey(version))
 	        throw new IllegalArgumentException("Unknown version: " + version);
 
 	    this.version = version;
@@ -268,11 +268,11 @@ public class APIConnection {
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
-	        URL url = new URL(joinPath(getBaseURL(), auth_prefixes.get(version), "/token"));
-	        HttpURLConnection conn = openConnection(url);
+	        final URL url = new URL(joinPath(getBaseURL(), authPrefixes.get(version), "/token"));
+	        final HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
-	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes(getHTTPAuthEncoding()));
+	        final String auth = Base64.encodeBase64String((key + ":" + secret).getBytes(getHTTPAuthEncoding()));
 
 	        conn.setRequestProperty("Authorization", "Basic " + auth);
 
@@ -283,21 +283,20 @@ public class APIConnection {
 	        wr.flush();
 	        wr.close();
 
-	        int responseCode = conn.getResponseCode();
-	        if(503 == responseCode)
+	        if(503 == conn.getResponseCode())
 	            throw new UnavailableException(conn.getResponseMessage());
 
-	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
+	        final ResponseInfo info = getResponseInfo(conn, "UTF-8");
 
             rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
-	        StringBuilder sb = new StringBuilder();
+	        final StringBuilder sb = new StringBuilder();
 	        String line;
 	        while ((line = rd.readLine()) != null) {
 	            sb.append(line);
 	        }
 	        rd.close();
 
-	        JSONObject response = new JSONObject(sb.toString());
+	        final JSONObject response = new JSONObject(sb.toString());
 	        token = response.get("access_token").toString();
 	    }
         catch (MalformedURLException mue)
@@ -327,7 +326,7 @@ public class APIConnection {
 	 * @return the joined path
 	 */
 	private String joinPath(String ... args) {
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
 		    String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
@@ -356,7 +355,7 @@ public class APIConnection {
 	 * @return the query string
 	 */
 	private String encodeUrl(Map<?, ?> parameters) {
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 
 		try {
