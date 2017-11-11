@@ -63,10 +63,10 @@ import org.json.JSONException;
  * retried.
  */
 public class APIConnection {
-	private String key;
-	private String secret;
-	private String version;
-	private String practiceid;
+	private final String key;
+	private final String secret;
+	private final String version;
+	private String practiceId;
 	private String base_url;
 	private String token;
 	private Charset httpAuthEncoding = Charset.forName("UTF-8");
@@ -79,13 +79,13 @@ public class APIConnection {
 	private int _socketReadTimeout    = 20 * 2000;
 
 	// http://stackoverflow.com/q/507602
-	private static final Map<String, String> auth_prefixes;
+	private static final Map<String, String> authPrefixes;
 	static {
 		Map<String, String> tempMap = new HashMap<String, String>();
 		tempMap.put("v1", "/oauth");
 		tempMap.put("preview1", "/oauthpreview");
 		tempMap.put("openpreview1", "/oauthopenpreview");
-		auth_prefixes = Collections.unmodifiableMap(tempMap);
+		authPrefixes = Collections.unmodifiableMap(tempMap);
 	}
 
 	/**
@@ -107,18 +107,18 @@ public class APIConnection {
 	 * @param version    API version to access
 	 * @param key        client key (also known as ID)
 	 * @param secret     client secret
-	 * @param practiceid practice ID to use
+	 * @param practiceId practice ID to use
      *
      * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
-	public APIConnection(String version, String key, String secret, String practiceid) throws AthenahealthException {
-	    if(!auth_prefixes.containsKey(version))
+	public APIConnection(String version, String key, String secret, String practiceId) throws AthenahealthException {
+	    if(!authPrefixes.containsKey(version))
 	        throw new IllegalArgumentException("Unknown version: " + version);
 
 	    this.version = version;
 		this.key = key;
 		this.secret = secret;
-		this.practiceid = practiceid;
+		this.practiceId = practiceId;
 		this.base_url = "https://api.athenahealth.com";
 	}
 
@@ -130,7 +130,7 @@ public class APIConnection {
 	public void setBaseURL(String baseURL)
 	{
 	    // Remove any trailing slashes
-	    if(null != baseURL)
+	    if(baseURL != null)
 	        while(baseURL.endsWith("/"))
 	            baseURL = baseURL.substring(0, baseURL.length() - 1);
 
@@ -214,7 +214,7 @@ public class APIConnection {
      * @param encoding The character encoding to use.
      */
     public void setHTTPAuthEncoding(Charset encoding) {
-        if(null == encoding)
+        if(encoding == null)
             throw new IllegalArgumentException("Encoding must not be null");
 
         httpAuthEncoding = encoding;
@@ -244,7 +244,7 @@ public class APIConnection {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         if(conn instanceof HttpsURLConnection) {
             SSLSocketFactory ssf = getSSLSocketFactory();
-            if(null != ssf)
+            if(ssf != null)
                 ((HttpsURLConnection)conn).setSSLSocketFactory(ssf);
         }
 
@@ -263,36 +263,35 @@ public class APIConnection {
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
-	        URL url = new URL(path_join(getBaseURL(), auth_prefixes.get(version), "/token"));
-	        HttpURLConnection conn = openConnection(url);
+	        final URL url = new URL(joinPath(getBaseURL(), authPrefixes.get(version), "/token"));
+	        final HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
-	        String auth = Base64.encodeBase64String((key + ":" + secret).getBytes(getHTTPAuthEncoding()));
+	        final String auth = Base64.encodeBase64String((key + ":" + secret).getBytes(getHTTPAuthEncoding()));
 
 	        conn.setRequestProperty("Authorization", "Basic " + auth);
 
 	        conn.setDoOutput(true);
 
 	        wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
-	        wr.write(urlencode(Collections.singletonMap("grant_type", "client_credentials")));
+	        wr.write(encodeUrl(Collections.singletonMap("grant_type", "client_credentials")));
 	        wr.flush();
 	        wr.close();
 
-	        int responseCode = conn.getResponseCode();
-	        if(503 == responseCode)
+	        if(503 == conn.getResponseCode())
 	            throw new UnavailableException(conn.getResponseMessage());
 
-	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
+	        final ResponseInfo info = getResponseInfo(conn, "UTF-8");
 
             rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), info.getCharset()));
-	        StringBuilder sb = new StringBuilder();
+	        final StringBuilder sb = new StringBuilder();
 	        String line;
 	        while ((line = rd.readLine()) != null) {
 	            sb.append(line);
 	        }
 	        rd.close();
 
-	        JSONObject response = new JSONObject(sb.toString());
+	        final JSONObject response = new JSONObject(sb.toString());
 	        token = response.get("access_token").toString();
 	    }
         catch (MalformedURLException mue)
@@ -305,10 +304,10 @@ public class APIConnection {
 	    }
 	    finally
 	    {
-            if(null != wr) try { wr.close(); }
+            if(wr != null) try { wr.close(); }
             catch (IOException ioe) { ioe.printStackTrace(); }
 
-            if(null != rd) try { rd.close(); }
+            if(rd != null) try { rd.close(); }
 	        catch (IOException ioe) { ioe.printStackTrace(); }
 	    }
 	}
@@ -321,8 +320,8 @@ public class APIConnection {
 	 * @param args parts of the path to join
 	 * @return the joined path
 	 */
-	private String path_join(String ... args) {
-		StringBuilder sb = new StringBuilder();
+	private String joinPath(String ... args) {
+		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
 		    String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
@@ -334,8 +333,7 @@ public class APIConnection {
 
 			if (first) {
 				first = false;
-			}
-			else {
+			} else {
 				sb.append("/");
 			}
 
@@ -351,8 +349,8 @@ public class APIConnection {
 	 * @param parameters keys and values to encode
 	 * @return the query string
 	 */
-	private String urlencode(Map<?, ?> parameters) {
-		StringBuilder sb = new StringBuilder();
+	private String encodeUrl(Map<?, ?> parameters) {
+		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 
 		try {
@@ -362,14 +360,12 @@ public class APIConnection {
 
 		        if (first) {
 		            first = false;
-		        }
-		        else {
+		        } else {
 		            sb.append("&");
 		        }
                 sb.append(URLEncoder.encode(k, "UTF-8"))
                   .append('=')
-                  .append(URLEncoder.encode(v, "UTF-8"))
-                  ;
+                  .append(URLEncoder.encode(v, "UTF-8"));
 		    }
 		} catch (UnsupportedEncodingException uee) {
 		    throw new InternalError("Java suddenly does not support UTF-8 character encoding");
@@ -385,25 +381,25 @@ public class APIConnection {
 	 * This method abstracts away the connection, streams, and readers necessary to make an HTTP
 	 * request.  It also adds in the Authorization header and token.
 	 *
-	 * @param verb       HTTP method to use
+	 * @param method     HTTP method to use
 	 * @param path       URI to find
 	 * @param parameters key-value pairs of request parameters
 	 * @param headers    key-value pairs of request headers
-	 * @param secondcall true if this is the retried request
+	 * @param secondCall true if this is the retried request
 	 * @return the JSON-decoded response
 	 *
 	 * @throws AthenahealthException If there is an error making the call.
 	 *                               API-level errors are reported in the return-value.
 	 */
-	private Object call(String verb, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondcall) throws AthenahealthException {
+	private Object call(String method, String path, Map<String, String> parameters, Map<String, String> headers, boolean secondCall) throws AthenahealthException {
 	    Writer wr = null;
 	    BufferedReader rd = null;
 	    BufferedInputStream in = null;
 	    try {
 	        // Join up a url and open a connection
-	        URL url = new URL(path_join(getBaseURL(), version, practiceid, path));
+	        URL url = new URL(joinPath(getBaseURL(), version, practiceId, path));
             HttpURLConnection conn = openConnection(url);
-	        conn.setRequestMethod(verb);
+	        conn.setRequestMethod(method);
 
 	        conn.setRequestProperty("Content-Type",  "application/x-www-form-urlencoded; charset=UTF-8");
 
@@ -419,15 +415,15 @@ public class APIConnection {
 	        if (parameters != null) {
 	            conn.setDoOutput(true);
 	            wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
-	            wr.write(urlencode(parameters));
+	            wr.write(encodeUrl(parameters));
 	            wr.flush();
 	            wr.close();
 	        }
 
 	        // If we get a 401, retry once
-	        if (conn.getResponseCode() == 401 && !secondcall) {
+	        if (conn.getResponseCode() == 401 && !secondCall) {
 	            authenticate();
-	            return call(verb, path, parameters, headers, true);
+	            return call(method, path, parameters, headers, true);
 	        }
 
 	        ResponseInfo info = getResponseInfo(conn, "UTF-8");
@@ -437,7 +433,7 @@ public class APIConnection {
 	        Object response;
 	        // We may have binary data coming back. Only use text-oriented
 	        // readers when the stream is not binary.
-	        if(null != contentType && contentType.startsWith("image/"))
+	        if(contentType != null && contentType.startsWith("image/"))
 	        {
                 // This is binary data.
 	            long contentLength = conn.getContentLengthLong();
@@ -453,7 +449,7 @@ public class APIConnection {
 	            }
 	            byte[] buffer = new byte[4096];
 	            int c;
-	            while (-1 != (c = in.read(buffer)))
+	            while ((c = in.read(buffer)) != -1)
 	                baos.write(buffer, 0, c);
 
                 baos.close();
@@ -481,10 +477,10 @@ public class APIConnection {
 
 	            String rawResponse = sb.toString();
 
-	            if(503 == conn.getResponseCode())
+	            if(conn.getResponseCode() == 503)
 	                throw new UnavailableException("Service Temporarily Unavailable: " + rawResponse);
 
-	            if(null == contentType)
+	            if(contentType == null)
 	                throw new AthenahealthException("Expected application/json response, got <null> instead.");
 
 	            if(!"application/json".equals(contentType))
@@ -509,7 +505,7 @@ public class APIConnection {
 	                        for(Map.Entry<String,List<String>> header : responseHeaders.entrySet())
 	                            for(String value : header.getValue())
 	                            {
-	                                if(null == header.getKey() || "".equals(header.getKey()))
+	                                if(header.getKey() == null || header.getKey().isEmpty())
 	                                    System.err.println("Status: " + value);
 	                                else
 	                                    System.err.println(header.getKey() + "=" + value);
@@ -532,13 +528,13 @@ public class APIConnection {
         }
         finally
         {
-            if(null != wr) try { wr.close(); }
+            if(wr != null) try { wr.close(); }
             catch (IOException ioe) { ioe.printStackTrace(); }
 
-            if(null != in) try { in.close(); }
+            if(in != null) try { in.close(); }
             catch (IOException ioe) { ioe.printStackTrace(); }
 
-            if(null != rd) try { rd.close(); }
+            if(rd != null) try { rd.close(); }
             catch (IOException ioe) { ioe.printStackTrace(); }
         }
 	}
@@ -568,14 +564,14 @@ public class APIConnection {
         String charset = defaultCharset;
 
 	    int pos = contentType.indexOf(';');
-	    if(pos >= 0) {
+	    if(pos != -1) {
 	        // Use of Locale.US here is justified, since the content-type
 	        // header should only contain ASCII characters.
 	        String lowerContentType = contentType.toLowerCase(Locale.US);
 	        String charsetParameter = "charset=";
 	        int charsetParameterLength = charsetParameter.length();
 	        int charsetPos = lowerContentType.indexOf(charsetParameter);
-	        if(charsetPos >= 0) {
+	        if(charsetPos != -1) {
 	            int len = charsetPos + charsetParameterLength;
 	            int end = lowerContentType.indexOf(' ', len);
 	            // Use original contentType to get original capitalization
@@ -596,7 +592,7 @@ public class APIConnection {
         for(Map.Entry<String,List<String>> entry : conn.getHeaderFields().entrySet())
         {
             System.out.print("Header [");
-            if(null == entry.getKey()) // This is the HTTP response line
+            if(entry.getKey() == null) // This is the HTTP response line
                 System.out.print("Response");
             else
                 System.out.print(entry.getKey());
@@ -655,7 +651,7 @@ public class APIConnection {
 	public Object GET(String path, Map<String, String> parameters, Map<String, String> headers) throws AthenahealthException {
 		String query = "";
 		if (parameters != null) {
-			query = "?" + urlencode(parameters);
+			query = "?" + encodeUrl(parameters);
 		}
 		return call("GET", path + query, null, headers, false);
 	}
@@ -788,7 +784,7 @@ public class APIConnection {
 	public Object DELETE(String path, Map<String, String> parameters, Map<String, String> headers) throws AthenahealthException {
 		String query = "";
 		if (parameters != null) {
-			query = "?" + urlencode(parameters);
+			query = "?" + encodeUrl(parameters);
 		}
 		return call("DELETE", path + query, null, headers, false);
 	}
@@ -805,10 +801,10 @@ public class APIConnection {
 	/**
 	 * Set the practice ID to use for requests.
 	 *
-	 * @param practiceid the new practiceid
+	 * @param practiceId the new practiceId
 	 */
-	public void setPracticeID(String practiceid) {
-		this.practiceid = practiceid;
+	public void setPracticeID(String practiceId) {
+		this.practiceId = practiceId;
 	}
 
 	/**
@@ -817,6 +813,6 @@ public class APIConnection {
 	 * @return the practice ID
 	 */
 	public String getPracticeID() {
-		return this.practiceid;
+		return this.practiceId;
 	}
 }
