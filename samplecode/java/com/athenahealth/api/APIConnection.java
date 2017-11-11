@@ -161,9 +161,6 @@ public class APIConnection {
 
     /**
      * Gets the custom {@link SSLSocketFactory} being used with this connection.
-     *
-     * @param The SSLSocketFactory to use for connections, or <code>null</code>
-     *        if no customized SSLSocketFactory has been configured for use.
      */
 	public SSLSocketFactory getSSLSocketFactory() {
 	    return _sslSocketFactory;
@@ -238,8 +235,6 @@ public class APIConnection {
      * Get the character encoding that will be used when preparing HTTP
      * authentication credentials using base64 encoding.
      * The default is UTF-8, as per athenaNET's documentation.
-     *
-     * @param encoding The character encoding to use.
      */
     public Charset getHTTPAuthEncoding() {
         return httpAuthEncoding;
