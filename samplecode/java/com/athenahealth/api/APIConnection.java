@@ -484,9 +484,16 @@ public class APIConnection {
 	                throw new AthenahealthException("Expected application/json response, got <null> instead.");
 
 	            if(!"application/json".equals(contentType))
-	                throw new AthenahealthException("Expected application/json response, got "
-	                        + contentType + " instead."
-	                        + " Content=" + rawResponse);
+	            {
+	                if("text/xml".equals(contentType)
+	                   && null != rawResponse
+	                   && "<h1>Gateway Timeout</h1>".equals(rawResponse))
+	                    throw new CommunicationException("Service Temporarily Unavailable: " + rawResponse);
+	                else
+	                    throw new AthenahealthException("Expected application/json response, got "
+	                            + contentType + " instead."
+	                            + " Content=" + rawResponse);
+	            }
 
 	            // If it won't parse as an object, it'll parse as an array.
 	            try {
