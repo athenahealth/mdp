@@ -495,7 +495,7 @@ public class APIConnection {
 	            if(!"application/json".equals(contentType))
 	                throw new AthenahealthException("Expected application/json response, got "
 	                        + contentType + " instead."
-	                        + " Content=" + rawResponse);
+	                        + " Content=" + rawResponse + "; response code=" + conn.getResponseCode());
 
 	            // If it won't parse as an object, it'll parse as an array.
 	            try {
