@@ -484,11 +484,6 @@ public class APIConnection {
 	                throw new AthenahealthException("Expected application/json response, got <null> instead.");
 
 	            if(!"application/json".equals(contentType))
-<<<<<<< HEAD
-	                throw new AthenahealthException("Expected application/json response, got "
-	                        + contentType + " instead."
-	                        + " Content=" + rawResponse + "; response code=" + conn.getResponseCode());
-=======
 	            {
 	                if("text/xml".equals(contentType)
 	                   && null != rawResponse
@@ -499,7 +494,6 @@ public class APIConnection {
 	                            + contentType + " instead."
 	                            + " Content=" + rawResponse);
 	            }
->>>>>>> 50be647b021889a3f11f09f0fdba24cc62885179
 
 	            // If it won't parse as an object, it'll parse as an array.
 	            try {
