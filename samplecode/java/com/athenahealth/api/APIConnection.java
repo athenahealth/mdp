@@ -94,10 +94,8 @@ public class APIConnection {
 	 * @param version API version to access
 	 * @param key     client key (also known as ID)
 	 * @param secret  client secret
-	 *
-	 * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
-	public APIConnection(String version, String key, String secret) throws AthenahealthException {
+	public APIConnection(String version, String key, String secret) {
 		this(version, key, secret, "");
 	}
 
@@ -108,10 +106,8 @@ public class APIConnection {
 	 * @param key        client key (also known as ID)
 	 * @param secret     client secret
 	 * @param practiceId practice ID to use
-     *
-     * @throws AthenahealthException If there is a problem connecting to the service or authenticating with it.
 	 */
-	public APIConnection(String version, String key, String secret, String practiceId) throws AthenahealthException {
+	public APIConnection(String version, String key, String secret, String practiceId) {
 	    if(!authPrefixes.containsKey(version))
 	        throw new IllegalArgumentException("Unknown version: " + version);
 
