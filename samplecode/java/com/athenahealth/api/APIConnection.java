@@ -566,7 +566,10 @@ public class APIConnection {
 	    String contentType = conn.getContentType();
         String charset = defaultCharset;
 
-	    int pos = contentType.indexOf(';');
+        if(null == contentType || 0 == contentType.trim().length())
+            throw new IllegalStateException("Response contains no Content-Type header");
+
+        int pos = contentType.indexOf(';');
 	    if(pos != -1) {
 	        // Use of Locale.US here is justified, since the content-type
 	        // header should only contain ASCII characters.
