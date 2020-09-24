@@ -320,20 +320,22 @@ public class APIConnection {
 		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
-		    String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
+		    if(null != arg) {
+		        String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
 
-			// Skip empty strings
-			if (current.isEmpty()) {
-				continue;
-			}
+		        // Skip empty strings
+		        if (current.isEmpty()) {
+		            continue;
+		        }
 
-			if (first) {
-				first = false;
-			} else {
-				sb.append("/");
-			}
+		        if (first) {
+		            first = false;
+		        } else {
+		            sb.append("/");
+		        }
 
-			sb.append(current);
+		        sb.append(current);
+		    }
 		}
 
 		return sb.toString();
