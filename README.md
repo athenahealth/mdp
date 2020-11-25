@@ -1,16 +1,23 @@
-mdp
-===
+# mdp
 
 athenahealth's More Disruption Please API samples
 
 Visit https://developer.athenahealth.com/ for more information and to sign up for our developer sandbox!
 
-Contributing
---------------
+## Contributing
 See our [community](https://github.com/athenahealth/mdp/tree/master/community) folder for instructions on contributing sample code or snippets.
 
-License
--------
+### Community Libraries
+#### C#
+* [Athenahealthapi-csharp](https://github.com/Ephir-Dev/Athenahealthapi-csharp)
+
+#### Go
+* [go-athenahealth](https://github.com/eleanorhealth/go-athenahealth)
+
+#### PHP
+* [athenahealth-api](https://github.com/tonicforhealth/athenahealth-api)
+
+## License
 Copyright 2017 athenahealth, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
