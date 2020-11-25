@@ -7,14 +7,14 @@ Visit https://developer.athenahealth.com/ for more information and to sign up fo
 ## Contributing
 See our [community](https://github.com/athenahealth/mdp/tree/master/community) folder for instructions on contributing sample code or snippets.
 
-### Community Libraries
-#### C#
+## Community Libraries
+### C#
 * [Athenahealthapi-csharp](https://github.com/Ephir-Dev/Athenahealthapi-csharp)
 
-#### Go
+### Go
 * [go-athenahealth](https://github.com/eleanorhealth/go-athenahealth)
 
-#### PHP
+### PHP
 * [athenahealth-api](https://github.com/tonicforhealth/athenahealth-api)
 
 ## License
