@@ -15,14 +15,13 @@
  */
 package com.athenahealth.api;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.net.URL;
@@ -65,7 +64,6 @@ import org.json.JSONException;
 public class APIConnection {
 	private final String key;
 	private final String secret;
-	private final String version;
 	private String practiceId;
 	private String base_url;
 	private String token;
@@ -77,16 +75,6 @@ public class APIConnection {
 	private SSLSocketFactory _sslSocketFactory;
 	private int _socketConnectTimeout =  5 * 1000;
 	private int _socketReadTimeout    = 20 * 2000;
-
-	// http://stackoverflow.com/q/507602
-	private static final Map<String, String> authPrefixes;
-	static {
-		Map<String, String> tempMap = new HashMap<String, String>();
-		tempMap.put("v1", "/oauth");
-		tempMap.put("preview1", "/oauthpreview");
-		tempMap.put("openpreview1", "/oauthopenpreview");
-		authPrefixes = Collections.unmodifiableMap(tempMap);
-	}
 
 	/**
 	 * Connect to the specified API version using key and secret.
@@ -108,14 +96,14 @@ public class APIConnection {
 	 * @param practiceId practice ID to use
 	 */
 	public APIConnection(String version, String key, String secret, String practiceId) {
-	    if(!authPrefixes.containsKey(version))
-	        throw new IllegalArgumentException("Unknown version: " + version);
-
-	    this.version = version;
 		this.key = key;
 		this.secret = secret;
 		this.practiceId = practiceId;
-		this.base_url = "https://api.athenahealth.com";
+		if("preview1".equals(version)) {
+		    this.base_url = "https://api.preview.platform.athenahealth.com";
+		} else {
+		    this.base_url = "https://api.platform.athenahealth.com";
+		}
 	}
 
 	/**
@@ -259,7 +247,7 @@ public class APIConnection {
 	    try {
 	        // The URL to authenticate to is determined by the version of the API specified at
 	        // construction.
-	        final URL url = new URL(joinPath(getBaseURL(), authPrefixes.get(version), "/token"));
+	        final URL url = new URL(joinPath(getBaseURL(), "/oauth2/v1/token"));
 	        final HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod("POST");
 
@@ -270,7 +258,10 @@ public class APIConnection {
 	        conn.setDoOutput(true);
 
 	        wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
-	        wr.write(encodeUrl(Collections.singletonMap("grant_type", "client_credentials")));
+	        HashMap<String,String> params = new HashMap<String,String>();
+	        params.put("grant_type", "client_credentials");
+	        params.put("scope", "athena/service/Athenanet.MDP.*");
+	        wr.write(encodeUrl(params));
 	        wr.flush();
 	        wr.close();
 
@@ -320,20 +311,22 @@ public class APIConnection {
 		final StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String arg : args) {
-		    String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
+		    if(null != arg) {
+		        String current = PATH_SEPARATORS.matcher(arg).replaceAll("");
 
-			// Skip empty strings
-			if (current.isEmpty()) {
-				continue;
-			}
+		        // Skip empty strings
+		        if (current.isEmpty()) {
+		            continue;
+		        }
 
-			if (first) {
-				first = false;
-			} else {
-				sb.append("/");
-			}
+		        if (first) {
+		            first = false;
+		        } else {
+		            sb.append("/");
+		        }
 
-			sb.append(current);
+		        sb.append(current);
+		    }
 		}
 
 		return sb.toString();
@@ -393,8 +386,8 @@ public class APIConnection {
 	    BufferedInputStream in = null;
 	    try {
 	        // Join up a url and open a connection
-	        URL url = new URL(joinPath(getBaseURL(), version, practiceId, path));
-            HttpURLConnection conn = openConnection(url);
+	        URL url = new URL(joinPath(getBaseURL(), "v1", practiceId, path));
+	        HttpURLConnection conn = openConnection(url);
 	        conn.setRequestMethod(method);
 
 	        conn.setRequestProperty("Content-Type",  "application/x-www-form-urlencoded; charset=UTF-8");
@@ -566,7 +559,10 @@ public class APIConnection {
 	    String contentType = conn.getContentType();
         String charset = defaultCharset;
 
-	    int pos = contentType.indexOf(';');
+        if(null == contentType || 0 == contentType.trim().length())
+            throw new IllegalStateException("Response contains no Content-Type header");
+
+        int pos = contentType.indexOf(';');
 	    if(pos != -1) {
 	        // Use of Locale.US here is justified, since the content-type
 	        // header should only contain ASCII characters.
