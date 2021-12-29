@@ -28,10 +28,11 @@ import datetime
 ####################################################################################################
 key = 'CHANGEME: YOUR_API_KEY'
 secret = 'CHANGEME: YOUR_API_SECRET'
-version = 'preview1'
+environment = 'preview'
+version = 'v1'
 practiceid = 000000
 
-api = athenahealthapi.APIConnection(version, key, secret, practiceid)
+api = athenahealthapi.APIConnection(environment, version, key, secret, practiceid)
 
 # If you want to change which practice you're working with after initialization, this is how.
 # api.practiceid = 000000

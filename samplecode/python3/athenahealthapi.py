@@ -72,7 +72,7 @@ class APIConnection(object):
     practiceid -- If set, this will be used as the practiceid parameter to API calls
     """
     
-    def __init__(self, version, key, secret, practiceid=None):
+    def __init__(self, environment, version, key, secret, practiceid=None):
         """Connects to the specified API version using key and secret.
         
         If authentication fails due to JSON decoding, this raises a ResponseException. 
@@ -85,16 +85,16 @@ class APIConnection(object):
         Optional arguments:
         practiceid -- the practice ID to be used in constructing URLs
         """
-        auth_prefix_from_version = {
-            'v1': '/oauth',
-            'preview1': '/oauthpreview',
-            'openpreview1': '/oauthopenpreview',
+        host_from_environment = {
+            'prod': 'api.platform.athenahealth.com',
+            'preview': 'api.preview.platform.athenahealth.com'
         }
-    
-        self._host = 'api.athenahealth.com'
+        
+        self._environment = environment
         self._version = version.strip('/') 
+        self._host = host_from_environment[self._environment]
         self._connection = http.client.HTTPSConnection(self._host)
-        self._auth_url = auth_prefix_from_version[self._version]
+        self._auth_url = '/oauth2/v1'
         self._key = key
         self._secret = secret
         self._authenticate()
@@ -106,7 +106,7 @@ class APIConnection(object):
         # URL to use is determined by the version of the API specified in __init__.
         base64string = str(base64.b64encode(bytes('{0}:{1}'.format(self._key, self._secret), 'utf-8')), 'utf-8')
         
-        parameters = urllib.parse.urlencode({'grant_type': 'client_credentials'})
+        parameters = urllib.parse.urlencode({'grant_type': 'client_credentials', 'scope': 'athena/service/Athenanet.MDP.*'})
         headers = {
             'Content-type': 'application/x-www-form-urlencoded',
             'Authorization': 'Basic {0}'.format(base64string),
